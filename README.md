@@ -1,5 +1,9 @@
 # openai_assistant
 
+## Env setup 
+Create a .env file in manage.py directory
+
+## Setup
 1. Fork Repo
 2. Install requirements
 
