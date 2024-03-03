@@ -3,7 +3,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from .manager import create_assistant,chat_assistant
 import os
-
+import json
 
 from rest_framework import serializers
 
@@ -19,21 +19,19 @@ class CreateAssistant(APIView):
     def post(self, request):
         try:
             
-            json_file = request.FILES.get('json_file')
-            create = request.data['create']
-            assistant_name = request.data['assistant_name']
-            model_name = request.data['model_name']
-            instructions = request.data['instructions']
+            json_data = request.data.get('json_data')
+            create = request.data.get('create')
+            assistant_name = request.data.get('assistant_name')
+            model_name = request.data.get('model_name')
+            instructions = request.data.get('instructions')
             #  instructions prompt for creating assistant
             PROMPT_INTRUCTIONS = f"""chatbot assistant designed to assist customers with inquiries related to {instructions}. The chatbot will take input in the form of a JSON file, extracting relevant intents, keywords, and providing suggested questions along with their respective answers. The goal is to enhance user engagement and offer comprehensive information about {instructions}"""
 
-            if json_file:
-                file_content = json_file.read().decode('utf-8')
+            if json_data:
+                json_data_dump = json.dumps(json_data, indent=2)
                 file_path = os.path.join("file_json.json")
                 with open(file_path, 'w', encoding='utf-8') as file:
-                    file.write(file_content)
-            else:
-                file_content = None
+                    file.write(json_data_dump)
             
             new_assistant = create_assistant(
                 create=create,
