@@ -4,7 +4,7 @@ from rest_framework.views import APIView
 from .manager import create_assistant,chat_assistant
 import os
 import json
-
+import time
 from rest_framework import serializers
 
 class ResponseDataSerializer(serializers.Serializer):
@@ -26,7 +26,7 @@ class CreateAssistant(APIView):
             instructions = request.data.get('instructions')
             #  instructions prompt for creating assistant
             PROMPT_INTRUCTIONS = f"""chatbot assistant designed to assist customers with inquiries related to {instructions}. The chatbot will take input in the form of a JSON file, extracting relevant intents, keywords, and providing suggested questions along with their respective answers. The goal is to enhance user engagement and offer comprehensive information about {instructions}"""
-
+            time.sleep(22)
             if json_data:
                 json_data_dump = json.dumps(json_data, indent=2)
                 file_path = os.path.join("file_json.json")
@@ -60,7 +60,7 @@ class ChatAssistant(APIView):
             instructions = request.data['instructions']
             # instructions for creating List of Intent
             if chat_query.lower() == "intent":
-
+                time.sleep(22)
                 # instructions = instructions + new prompt for getting list of intetns
                 PROMPT_INTENT = """
                 Is this Vehicle still available?
@@ -100,7 +100,7 @@ class ChatAssistant(APIView):
             
             # List Query from intent
             if chat_query.lower() == "query_from_intent":
-            
+                time.sleep(22)
                 # List of query from intent
                 PROMPT_QUERY_INTENT = f"""
                 Intent: {instructions}
@@ -125,6 +125,7 @@ class ChatAssistant(APIView):
 
             # Query chat
             if chat_query.lower() == "query":
+                time.sleep(22)
                 # Answering
                 answer = chat_assistant(
                     id_assistente=assistant_id,
@@ -133,7 +134,7 @@ class ChatAssistant(APIView):
 
                 serializer_answer = ResponseAnswerSerializer(data={"answer": answer})
                 serializer_answer.is_valid(raise_exception=True)
-
+                time.sleep(22)
                 # New query based on previous answer
                 PROMPT_QUERY = f"""
                 Question: {instructions}
