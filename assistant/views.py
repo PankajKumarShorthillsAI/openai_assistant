@@ -1,7 +1,7 @@
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from .manager import create_assistant,chat_assistant
+from .manager import create_assistant,chat_assistant,create_assistant_without_json_data,chat_assistant_azure
 import os
 import json
 import time
@@ -13,6 +13,8 @@ class ResponseDataSerializer(serializers.Serializer):
 class ResponseAnswerSerializer(serializers.Serializer):
     answer = serializers.CharField()
 
+class ResponseDataSerializerAzure(serializers.Serializer):
+    answer = serializers.ListField(child=serializers.CharField())
 
 class CreateAssistant(APIView):
     """""" 
@@ -25,25 +27,39 @@ class CreateAssistant(APIView):
             model_name = request.data.get('model_name')
             instructions = request.data.get('instructions')
             #  instructions prompt for creating assistant
-            PROMPT_INTRUCTIONS = f"""chatbot assistant designed to assist customers with inquiries related to {instructions}. The chatbot will take input in the form of a JSON file, extracting relevant intents, keywords, and providing suggested questions along with their respective answers. The goal is to enhance user engagement and offer comprehensive information about {instructions}"""
-            time.sleep(22)
+
+            # PROMPT_INTRUCTIONS = f"""chatbot assistant designed to assist customers with inquiries related to {instructions}. The chatbot will take input in the form of a JSON file, extracting relevant intents, keywords, and providing suggested questions along with their respective answers. The goal is to enhance user engagement and offer comprehensive information about {instructions}"""
+
+            PROMPT_INTRUCTIONS = f"""chatbot assistant designed to assist customers with inquiries related to {instructions}."""
+
             if json_data:
+                time.sleep(22) # Sleep put for simple api key
                 json_data_dump = json.dumps(json_data, indent=2)
                 file_path = os.path.join("file_json.json")
                 with open(file_path, 'w', encoding='utf-8') as file:
                     file.write(json_data_dump)
             
-            new_assistant = create_assistant(
-                create=create,
-                assistant_name=assistant_name,
-                model_name=model_name,
-                instructions=PROMPT_INTRUCTIONS,
-                file_up="file_json.json"
-            )
- 
-            return Response({"message": "json_file_received_successfully",
-                             "assistant_id": new_assistant.id,
-                             }, status.HTTP_200_OK)
+                new_assistant = create_assistant(
+                    create=create,
+                    assistant_name=assistant_name,
+                    model_name=model_name,
+                    instructions=PROMPT_INTRUCTIONS,
+                    file_up="file_json.json"
+                )
+                return Response({"message": "json_data_created_successfully",
+                                "assistant_id": new_assistant.id,
+                                }, status.HTTP_200_OK)
+            else:
+                # For azure key
+                new_assistant = create_assistant_without_json_data(
+                    create=create,
+                    assistant_name=assistant_name,
+                    model_name=model_name,
+                    instructions=PROMPT_INTRUCTIONS
+                )
+                return Response({"message": "assistant_created_successfully",
+                                "assistant_id": new_assistant.id,
+                                }, status.HTTP_200_OK)
         
         except Exception as e:
             return Response({"error": str(e)}, status.HTTP_400_BAD_REQUEST)
@@ -144,6 +160,63 @@ class ChatAssistant(APIView):
                 OUTPUT_FORMAT: ["Example_question_1","Example_question_2"...]"""
                 
                 response_data_str = chat_assistant(
+                    id_assistente=assistant_id,
+                    user_input=PROMPT_QUERY
+                )
+                response_data = eval(response_data_str)  # Convert the string to a list
+
+                serializer = ResponseDataSerializer(data={"new_suggestions": response_data})
+                serializer.is_valid(raise_exception=True)
+
+                return Response({
+                    "new_suggestions": serializer.validated_data["new_suggestions"],
+                    "answer": serializer_answer.validated_data["answer"],
+                    "assistant_id": assistant_id,
+                }, status.HTTP_200_OK)
+            
+
+            # Query chat without json data initial query
+            if chat_query.lower() == "intial_query_without_json_data":
+                # Answering
+                PROMPT_ANWERING_WITHOUT_JSON_DATA_INITIAL = f"""Answer the following question: {instructions}. Give a python list of string. Do not provide any extra details/instructions and give a clean list.
+                OUTPUT_FORMAT: ["Example_question_1","Example_question_2"...]
+                """
+
+                answer = chat_assistant_azure(
+                    id_assistente=assistant_id,
+                    user_input=PROMPT_ANWERING_WITHOUT_JSON_DATA_INITIAL
+                )
+                answer = eval(answer)  # Convert the string to a list
+                serializer_answer = ResponseDataSerializerAzure(data={"answer": answer})
+                serializer_answer.is_valid(raise_exception=True)
+
+                return Response({
+                    "new_suggestions": serializer_answer.validated_data["answer"],
+                    "assistant_id": assistant_id,
+                }, status.HTTP_200_OK)
+
+            # Query chat without json data
+            if chat_query.lower() == "query_without_json_data":
+                # Answering
+                PROMPT_ANWERING_WITHOUT_JSON_DATA = f"""Answer the following question: {instructions}. Do not provide any extra details/instructions and give a clean answer. After giving answer do write anything extra"""
+                
+                answer = chat_assistant_azure(
+                    id_assistente=assistant_id,
+                    user_input=PROMPT_ANWERING_WITHOUT_JSON_DATA
+                )
+                
+                serializer_answer = ResponseAnswerSerializer(data={"answer": answer})
+                serializer_answer.is_valid(raise_exception=True)
+
+                # New query based on previous answer
+                PROMPT_QUERY = f"""
+                Question: {instructions}
+
+                Create 3 questions that can be asked which are related to the context of the question given above. Give a python list of string. Do not provide any extra details/instructions and give a clean list.
+
+                OUTPUT_FORMAT: ["Example_question_1","Example_question_2"...]"""
+                
+                response_data_str = chat_assistant_azure(
                     id_assistente=assistant_id,
                     user_input=PROMPT_QUERY
                 )
