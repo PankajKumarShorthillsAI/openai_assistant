@@ -206,11 +206,9 @@ class ChatAssistant(APIView):
                 )
                 
                 answer = eval(answer)  # Convert the string to a list
-                print(type(answer))
-                print(answer)
 
-                answer = [item for item in answer if item]
-                serializer_answer = ResponseDataSerializerAzure(data={"answer": answer})
+                fliter_answer = [item for item in answer if item]
+                serializer_answer = ResponseDataSerializerAzure(data={"answer": fliter_answer})
                 serializer_answer.is_valid(raise_exception=True)
 
                 # # New query based on previous answer
