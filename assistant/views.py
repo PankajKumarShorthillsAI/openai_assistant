@@ -204,8 +204,8 @@ class ChatAssistant(APIView):
                     id_assistente=assistant_id,
                     user_input=PROMPT_ANWERING_WITHOUT_JSON_DATA
                 )
-                
-                serializer_answer = ResponseAnswerSerializer(data={"answer": answer})
+                answer = eval(answer)
+                serializer_answer = ResponseDataSerializerAzure(data={"answer": answer})
                 serializer_answer.is_valid(raise_exception=True)
 
                 # # New query based on previous answer
