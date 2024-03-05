@@ -208,25 +208,25 @@ class ChatAssistant(APIView):
                 serializer_answer = ResponseAnswerSerializer(data={"answer": answer})
                 serializer_answer.is_valid(raise_exception=True)
 
-                # New query based on previous answer
-                PROMPT_QUERY = f"""
-                Question: {instructions}
+                # # New query based on previous answer
+                # PROMPT_QUERY = f"""
+                # Question: {instructions}
 
-                Create 3 questions that can be asked which are related to the context of the question given above. Give a python list of string. Do not provide any extra details/instructions and give a clean list.
+                # Create 3 questions that can be asked which are related to the context of the question given above. Give a python list of string. Do not provide any extra details/instructions and give a clean list.
 
-                OUTPUT_FORMAT: ["Example_question_1","Example_question_2"...]"""
+                # OUTPUT_FORMAT: ["Example_question_1","Example_question_2"...]"""
                 
-                response_data_str = chat_assistant_azure(
-                    id_assistente=assistant_id,
-                    user_input=PROMPT_QUERY
-                )
-                response_data = eval(response_data_str)  # Convert the string to a list
+                # response_data_str = chat_assistant_azure(
+                #     id_assistente=assistant_id,
+                #     user_input=PROMPT_QUERY
+                # )
+                # response_data = eval(response_data_str)  # Convert the string to a list
 
-                serializer = ResponseDataSerializer(data={"new_suggestions": response_data})
-                serializer.is_valid(raise_exception=True)
+                # serializer = ResponseDataSerializer(data={"new_suggestions": response_data})
+                # serializer.is_valid(raise_exception=True)
 
                 return Response({
-                    "new_suggestions": serializer.validated_data["new_suggestions"],
+                    # "new_suggestions": serializer.validated_data["new_suggestions"],
                     "answer": serializer_answer.validated_data["answer"],
                     "assistant_id": assistant_id,
                 }, status.HTTP_200_OK)
