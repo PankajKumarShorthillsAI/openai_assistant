@@ -204,7 +204,12 @@ class ChatAssistant(APIView):
                     id_assistente=assistant_id,
                     user_input=PROMPT_ANWERING_WITHOUT_JSON_DATA
                 )
-                answer = eval(answer)
+                
+                answer = eval(answer)  # Convert the string to a list
+                print(type(answer))
+                print(answer)
+
+                answer = [item for item in answer if item]
                 serializer_answer = ResponseDataSerializerAzure(data={"answer": answer})
                 serializer_answer.is_valid(raise_exception=True)
 
