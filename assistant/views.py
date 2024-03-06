@@ -197,6 +197,7 @@ class ChatAssistant(APIView):
 
             # Query chat without json data
             if chat_query.lower() == "query_without_json_data":
+                current_time_call = int(time.time())
                 # Answering
                 PROMPT_ANWERING_WITHOUT_JSON_DATA = f"""Answer the following question: {instructions}. Do not provide any extra details/instructions and give a clean answer. After giving answer do write anything extra"""
                 
@@ -204,7 +205,7 @@ class ChatAssistant(APIView):
                     id_assistente=assistant_id,
                     user_input=PROMPT_ANWERING_WITHOUT_JSON_DATA
                 )
-                
+                time_llm = int(time.time())
                 answer = eval(answer)  # Convert the string to a list
 
                 fliter_answer = [item for item in answer if item]
@@ -232,6 +233,9 @@ class ChatAssistant(APIView):
                     # "new_suggestions": serializer.validated_data["new_suggestions"],
                     "answer": serializer_answer.validated_data["answer"],
                     "assistant_id": assistant_id,
+                    "request_time": current_time_call,
+                    "llm_time": time_llm,
+                    "openai_time": time_llm - current_time_call
                 }, status.HTTP_200_OK)
             
         except Exception as e:

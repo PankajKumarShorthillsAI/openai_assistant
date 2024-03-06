@@ -164,7 +164,7 @@ def chat_assistant_azure(id_assistente, user_input):
         
         while status != "completed":
             status = check_status(run_id)
-            time.sleep(3)
+            # time.sleep(3)
         
         response = client_azure.beta.threads.messages.list(
             thread_id=my_thread_id
