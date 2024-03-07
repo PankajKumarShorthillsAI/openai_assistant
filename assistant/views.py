@@ -2,6 +2,7 @@ from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from .manager import create_assistant,chat_assistant,create_assistant_without_json_data,chat_assistant_azure
+from .managerV2 import create_assistant_without_json_dataV2,chat_assistantV2
 import os
 import json
 import time
@@ -228,6 +229,98 @@ class ChatAssistant(APIView):
 
                 # serializer = ResponseDataSerializer(data={"new_suggestions": response_data})
                 # serializer.is_valid(raise_exception=True)
+
+                return Response({
+                    # "new_suggestions": serializer.validated_data["new_suggestions"],
+                    "answer": serializer_answer.validated_data["answer"],
+                    "assistant_id": assistant_id,
+                    "request_time": current_time_call,
+                    "llm_time": time_llm,
+                    "openai_time": time_llm - current_time_call
+                }, status.HTTP_200_OK)
+            
+        except Exception as e:
+            return Response({"error": str(e)}, status.HTTP_400_BAD_REQUEST)
+        
+
+class CreateAssistantV2(APIView):
+    """""" 
+    def post(self, request):
+        try:
+            
+            json_data = request.data.get('json_data')
+            create = request.data.get('create')
+            assistant_name = request.data.get('assistant_name')
+            model_name = request.data.get('model_name')
+            instructions = request.data.get('instructions')
+            #  instructions prompt for creating assistant
+
+            PROMPT_INTRUCTIONS = f"""chatbot assistant designed to assist customers with inquiries related to {instructions}."""
+
+            new_assistant,my_thread_id = create_assistant_without_json_dataV2(
+                create=create,
+                assistant_name=assistant_name,
+                model_name=model_name,
+                instructions=PROMPT_INTRUCTIONS
+            )
+            return Response({"message": "assistant_created_successfully",
+                            "assistant_id": new_assistant.id,
+                            "thread_id": my_thread_id,
+                            }, status.HTTP_200_OK)
+        
+        except Exception as e:
+            return Response({"error": str(e)}, status.HTTP_400_BAD_REQUEST)
+
+
+class ChatAssistantV2(APIView):
+    """""" 
+    def post(self, request):
+        try:
+            
+            
+            assistant_id = request.data['assistant_id']
+            my_thread_id = request.data['thread_id']
+            chat_query = request.data['chat_query']
+            instructions = request.data['instructions']
+            # Query chat without json data initial query
+            if chat_query.lower() == "intial_query_without_json_data":
+                # Answering
+                PROMPT_ANWERING_WITHOUT_JSON_DATA_INITIAL = f"""Answer the following question: {instructions}. Give a python list of string. Do not provide any extra details/instructions and give a clean list.
+                OUTPUT_FORMAT: ["Example_question_1","Example_question_2"...]
+                """
+
+                answer = chat_assistantV2(
+                    id_assistente=assistant_id,
+                    my_thread_id=my_thread_id,
+                    user_input=PROMPT_ANWERING_WITHOUT_JSON_DATA_INITIAL
+                )
+                answer = eval(answer)  # Convert the string to a list
+                serializer_answer = ResponseDataSerializerAzure(data={"answer": answer})
+                serializer_answer.is_valid(raise_exception=True)
+
+                return Response({
+                    "new_suggestions": serializer_answer.validated_data["answer"],
+                    "assistant_id": assistant_id,
+                }, status.HTTP_200_OK)
+
+            # Query chat without json data
+            if chat_query.lower() == "query_without_json_data":
+                current_time_call = int(time.time())
+                # Answering
+                print(instructions)
+                PROMPT_ANWERING_WITHOUT_JSON_DATA = f"""Answer the following question: {instructions}. Do not provide any extra details/instructions and give a clean answer. After giving answer do write anything extra in python list format."""
+                
+                answer = chat_assistantV2(
+                    id_assistente=assistant_id,
+                    my_thread_id=my_thread_id,
+                    user_input=PROMPT_ANWERING_WITHOUT_JSON_DATA
+                )
+                time_llm = int(time.time())
+                answer = eval(answer)  # Convert the string to a list
+                
+                fliter_answer = [item for item in answer if item]
+                serializer_answer = ResponseDataSerializerAzure(data={"answer": fliter_answer})
+                serializer_answer.is_valid(raise_exception=True)
 
                 return Response({
                     # "new_suggestions": serializer.validated_data["new_suggestions"],
